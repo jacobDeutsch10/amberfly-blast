@@ -39,7 +39,7 @@ def show_heatmap(scores):
     hm = sns.heatmap(scores, annot = True, fmt="", cmap='YlGnBu',annot_kws={"size": 5}, ax=ax, vmin = 0, vmax =1100)
     plt.show()
 
-def show_networkx(scores, output_path = ""):
+def show_networkx(scores, output_path = "", show_plot=True):
     G = nx.Graph()
     for i in range(0,len(scores)):
         G.add_node(i)
@@ -57,4 +57,6 @@ def show_networkx(scores, output_path = ""):
     if output_path.endswith(".graphml"):
          nx.write_graphml(G, output_path)
     nx.draw_networkx(G, pos, with_labels=True)
-    plt.show()
+    if show_plot:
+        plt.show()
+    return G

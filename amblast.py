@@ -13,6 +13,7 @@ import networkx as nx
 from blastdb import create_db_from_csv, blast_all
 from blast_postprocess import *
 from datetime import datetime
+import math
 
 answers = prompt(questions)
 pprint(answers)
@@ -63,6 +64,7 @@ heatmap = input("Do you want to see the blast score heatmap?(Y/n)")
 if heatmap in yes:
     show_heatmap(scores)
 
+G = None
 graph = input("Do you want to see the fruchterman reingold graph?(Y/n)")
 if graph in yes:
     try:
@@ -70,4 +72,40 @@ if graph in yes:
     except Exception:
         pass
     graph_path = os.path.join("./graphs/", "{}-{}.graphml".format("graph",datetime.now().strftime("%d-%m-%H-%M")))
-    show_networkx(scores, graph_path)
+    G = show_networkx(scores, graph_path)
+
+data_mode = input("Do you want to enter data exploration mode?(Y/n)")
+
+if data_mode in yes:
+    if G is None:
+        try:
+            os.mkdir("graphs")
+        except Exception:
+            pass
+        graph_path = os.path.join("./graphs/", "{}-{}.graphml".format("graph",datetime.now().strftime("%d-%m-%H-%M")))
+        G = show_networkx(scores, graph_path, show_plot=False)
+    done = False
+    while not done:
+        msg = "Enter an integer between 0 & {}: ".format(len(scores)-1)
+        num = input(msg)
+        if not num.isnumeric:
+            print("must enter a numerical value")
+            continue
+        x = int(num)
+        num = input(msg)
+        if not num.isnumeric:
+            print("must enter a numerical value")
+            continue
+        y = int(num)
+        if x > (len(scores)-1) or x < 0 or y > (len(scores)-1) or y < 0:
+            print("indexes are our of bounds")
+            continue
+        else:
+            score = scores[x][y]
+            distance = math.sqrt((G.nodes[x]['x']-G.nodes[y]['x'])**2 + (G.nodes[x]['y']-G.nodes[y]['y'])**2 )
+            print("({}, {}): score: {:d} distance: {:0.3f}".format(x, y, score, distance))
+            print("node {} @ ({}, {})".format(x, G.nodes[x]['x'], G.nodes[x]['y']))
+            print("node {} @ ({}, {})".format(y, G.nodes[y]['x'], G.nodes[y]['y']))
+        is_done = input("say yes if you want to exit: ")
+        done = is_done in yes
+print("amblast exit")
