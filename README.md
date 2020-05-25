@@ -8,4 +8,7 @@ Step 2: update the submodule for GenomicsRAD. Type the following commands in the
 git submodule init
 git submodule update
 ```
-Step 3: Install dependencies with pip
+Step 4:Install blast
+```
+sudo apt-get install ncbi-blast+
+```
