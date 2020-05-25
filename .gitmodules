@@ -1,0 +1,3 @@
+[submodule "GenomicsRAD"]
+	path = GenomicsRAD
+	url = https://github.com/jacobDeutsch10/GenomicsRAD.git
