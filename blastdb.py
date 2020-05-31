@@ -4,16 +4,16 @@ import subprocess
 import statistics
 # makeblastdb -in ./amberfly.fsa -dbtype nucl -out ./amberflydb
 
-def create_db_from_csv(csv_path, fsa_db_path, fastas_dir, db_name):
+def create_db_from_csv(csv_path, fsa_db_path, fastas_dir, db_path):
     """
     csv_path: path to csv file containing RAD sequences
     fsa_db_path: path to global fsa file used to generate the database
     fastas_dir: directory to place individual fasta files in
-    db_name: name of the db 
+    db_path: path to db
     """
     df = pd.read_csv(csv_path, header=0)
     lengths = []
-    count = 1
+    count = 0
     df['keys'] = df['keys'].apply(lambda x: "_".join(x.split("_")[1:]))
     dbfile = open(fsa_db_path, "w")
     stats_file = open("seq_stats.txt", "w")
@@ -72,7 +72,6 @@ def create_db_from_csv(csv_path, fsa_db_path, fastas_dir, db_name):
         print(key + ": " + str(len(row["Strings"]))) 
     dbfile.close()
     stats_file.close()
-    db_path = os.path.join("./databases", db_name)
     subprocess.call(['makeblastdb', '-in', fsa_db_path, '-dbtype', 'nucl', '-out', db_path])
     print("average: " + str(statistics.mean(lengths)))
     print("meadian: " + str(statistics.median(lengths)))

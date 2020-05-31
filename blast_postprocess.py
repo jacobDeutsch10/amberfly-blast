@@ -27,6 +27,10 @@ def score_matrix_to_file(scores, output_path):
           columns=np.arange(1, len(scores) + 1))
     df.to_csv(output_path)
 
+def read_score_matrix(input_path):
+    df = pd.read_csv(input_path, header=0, index_col=0)
+    return df.to_numpy(dtype=int)
+
 def show_heatmap(scores):
     fig, ax = plt.subplots(figsize=(100,100))
     title = "Blast Bitscore Heatmap"
@@ -39,18 +43,17 @@ def show_heatmap(scores):
     hm = sns.heatmap(scores, annot = True, fmt="", cmap='YlGnBu',annot_kws={"size": 5}, ax=ax, vmin = 0, vmax =1100)
     plt.show()
 
-def show_networkx(scores, output_path = "", show_plot=True):
+def show_networkx(scores, output_path = "", show_plot=True, threshold=400):
     G = nx.Graph()
     for i in range(0,len(scores)):
         G.add_node(i)
     for i in range(0, len(scores)-1):
         for j in range(i, len(scores[0])):
-            if i != j and scores[i][j] != 0:
-                G.add_edge(i,j, weight=scores[i][j])
+            if i != j and scores[i][j] != 0 and scores[i][j] > threshold:
+                G.add_edge(i,j, weight=(scores[i][j]**2))
                 print("({}, {}): {}".format(i, j, scores[i,j]))
 
-    pos = nx.spring_layout(G)
-    print(pos)
+    pos = nx.spring_layout(G,weight='weight', scale=50, iterations = 500)
     for n,p in pos.items():
         G.nodes[n]['x'] = p[0]
         G.nodes[n]['y'] = p[1]

@@ -1,6 +1,6 @@
 from PyInquirer import style_from_dict, Token, prompt, Separator
 from pprint import pprint
-from cli_help import questions, DirectoryValidator
+from cli_help import *
 from GenomicsRAD import MultiFrame
 import os
 import subprocess
@@ -14,76 +14,95 @@ from blastdb import create_db_from_csv, blast_all
 from blast_postprocess import *
 from datetime import datetime
 import math
-
-answers = prompt(questions)
-pprint(answers)
-
-try:
-    os.mkdir(os.path.join(os.getcwd(), "RAD_sequences"))
-except Exception:
-    pass
-RAD_path =  "./RAD_sequences/" + answers['RADOUT']
-multi = MultiFrame.MultiFrame(behaviors=answers['behaviors'])
-multi.filename = answers['PATMOS']
-multi.get_keys()
-multi.read_from_xl_FULL(answers['PATMOS'])
-multi.create_behavior_bins()
-multi.avg_over_time_step(0.1)
-multi.print_multi()
-multi.create_atom_codes(num=5)
-multi.assign_atom_codes()
-multi.convert_frames_to_rad(RAD_path)
-del multi
-
-print("RAD sequences generated @ " + RAD_path)
-fastas_dir = os.path.join(os.getcwd(), answers["fastas"])
-output_dir = os.path.join(os.getcwd(), answers["outputs"])
-db_dir = os.path.join(os.getcwd(), "databases/")
-global_fsa = os.path.join(db_dir, answers["db"]+".fsa")
-db_path = os.path.join(db_dir, answers["db"])
-try:
-    os.mkdir(db_dir)
-except Exception:
-    pass
-try:
-    os.mkdir(fastas_dir)
-except Exception:
-    pass
-try:
-    os.mkdir(output_dir)
-except Exception:
-    pass
-
-create_db_from_csv(RAD_path, global_fsa, answers["fastas"], answers["db"])
-blast_all(os.path.join(os.getcwd(), answers["fastas"]), output_dir, db_path)
-scores = get_blast_score_matrix(output_dir)
-
 yes = ['y', 'Y', "yes", "Yes"]
-
-heatmap = input("Do you want to see the blast score heatmap?(Y/n)")
-if heatmap in yes:
-    show_heatmap(scores)
-
+init_answers = prompt(init_question)
+pprint(init_answers)
 G = None
-graph = input("Do you want to see the fruchterman reingold graph?(Y/n)")
-if graph in yes:
+if init_answers['mode'] == init_choices[0]:
+    answers = prompt(questions)
+    pprint(answers)
+
+    base_path = os.path.join(os.getcwd(), answers["DB"])
+    print(base_path)
     try:
-        os.mkdir("graphs")
+        os.mkdir(base_path)
     except Exception:
         pass
-    graph_path = os.path.join("./graphs/", "{}-{}.graphml".format("graph",datetime.now().strftime("%d-%m-%H-%M")))
-    G = show_networkx(scores, graph_path)
-
-data_mode = input("Do you want to enter data exploration mode?(Y/n)")
-
-if data_mode in yes:
-    if G is None:
+    RAD_path = os.path.join(base_path, answers['DB']+".csv")
+    multi = MultiFrame.MultiFrame(behaviors=answers['behaviors'])
+    multi.filename = answers['PATMOS']
+    multi.get_keys()
+    multi.read_from_xl_FULL(answers['PATMOS'])
+    multi.create_behavior_bins()
+    multi.avg_over_time_step(0.1)
+    multi.print_multi()
+    multi.create_atom_codes(num=5)
+    multi.assign_atom_codes()
+    multi.convert_frames_to_rad(RAD_path)
+    del multi
+    
+    print("RAD sequences generated @ " + RAD_path)
+    fastas_dir = os.path.join(base_path, "fastas")
+    output_dir = os.path.join(base_path, "blast-outputs")
+    db_dir = os.path.join(base_path, "db/")
+    global_fsa = os.path.join(db_dir, answers["DB"]+".fsa")
+    db_path = os.path.join(db_dir, answers["DB"])
+    try:
+        os.makedirs(db_dir)
+    except Exception:
+        pass
+    try:
+        os.makedirs(fastas_dir)
+    except Exception:
+        pass
+    try:
+        os.makedirs(output_dir)
+    except Exception:
+        pass
+    
+    create_db_from_csv(RAD_path, global_fsa, fastas_dir, db_path)
+    blast_all(fastas_dir, output_dir, db_path)
+    scores = get_blast_score_matrix(output_dir)
+    score_matrix_to_file(scores, os.path.join(base_path, "scores.csv"))
+    
+    
+    
+    heatmap = input("Do you want to see the blast score heatmap?(Y/n)")
+    if heatmap in yes:
+        show_heatmap(scores)
+    
+    graph = input("Do you want to see the fruchterman reingold graph?(Y/n)")
+    if graph in yes:
         try:
-            os.mkdir("graphs")
+            os.mkdir(os.path.join(base_path, "graphs"))
         except Exception:
             pass
-        graph_path = os.path.join("./graphs/", "{}-{}.graphml".format("graph",datetime.now().strftime("%d-%m-%H-%M")))
-        G = show_networkx(scores, graph_path, show_plot=False)
+        graph_path = os.path.join(answers["DB"],"graphs/", "{}-{}.graphml".format("graph",datetime.now().strftime("%d-%m-%H-%M")))
+        thresh = get_numeric_input("Enter bitscore threshold for edges on graph")
+        G = show_networkx(scores, graph_path, threshold=thresh)
+
+data_mode = input("Do you want to enter data exploration mode?(Y/n)")
+if init_answers['mode'] != init_choices[0]:
+    db = prompt({
+            'type': 'input',
+            'name': 'db',
+            'message': 'name of existing db',
+            'validate': DirectoryValidator})
+    base_path = os.path.join(os.getcwd(), db['db'])
+    scores = read_score_matrix(os.path.join(base_path, 'scores.csv'))
+    print(scores)
+
+if data_mode in yes:
+    x = -1
+    y = -1
+    if G is None:
+        try:
+            os.mkdir(os.path.join(base_path, "graphs"))
+        except Exception:
+            pass
+        graph_path = os.path.join(base_path,"graphs/", "{}-{}.graphml".format("graph",datetime.now().strftime("%d-%m-%H-%M")))
+        thresh = get_numeric_input("Enter bitscore threshold for edges on graph: ")
+        G = show_networkx(scores, graph_path, show_plot=False, threshold=thresh)
     done = False
     while not done:
         msg = "Enter an integer between 0 & {}: ".format(len(scores)-1)
@@ -91,19 +110,21 @@ if data_mode in yes:
         if not num.isnumeric:
             print("must enter a numerical value")
             continue
-        x = int(num)
-        num = input(msg)
+        else:
+            x = int(num)
+            num = input(msg)
         if not num.isnumeric:
             print("must enter a numerical value")
             continue
-        y = int(num)
+        else:
+            y = int(num)
         if x > (len(scores)-1) or x < 0 or y > (len(scores)-1) or y < 0:
             print("indexes are our of bounds")
             continue
         else:
             score = scores[x][y]
             distance = math.sqrt((G.nodes[x]['x']-G.nodes[y]['x'])**2 + (G.nodes[x]['y']-G.nodes[y]['y'])**2 )
-            print("({}, {}): score: {:d} distance: {:0.3f}".format(x, y, score, distance))
+            print("({}, {}): score: {:d} distance: {:0.8f}".format(x, y, score, distance))
             print("node {} @ ({}, {})".format(x, G.nodes[x]['x'], G.nodes[x]['y']))
             print("node {} @ ({}, {})".format(y, G.nodes[y]['x'], G.nodes[y]['y']))
         is_done = input("say yes if you want to exit: ")

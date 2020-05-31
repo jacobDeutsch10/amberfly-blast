@@ -11,6 +11,28 @@ class DirectoryValidator(Validator):
             raise ValidationError(
                 message='Please enter a valid directory path',
                 cursor_position=len(doc.text))  # Move cursor to end
+
+def get_numeric_input(msg):
+	done = False
+	while not done:
+		num = input(msg)
+		done = num.isnumeric()
+		if not done:
+			print("must be numeric")
+	return int(num)
+
+init_choices =  [
+            'Do blast analysis from Patmos output',
+            'Analyze previously created blast output', 
+        ]
+init_question = [
+    {
+        'type': 'list',
+        'name': 'mode',
+        'message': 'pick one',
+        'choices': init_choices
+    }
+]
 questions = [
     {
         'type': 'input',
@@ -21,28 +43,10 @@ questions = [
     },
     {
         'type': 'input',
-        'name': 'RADOUT',
-        'message': 'Enter name of RAD sequence outputfile',
-        'default': 'RAD_STRINGs.csv'
+        'name': 'DB',
+        'message': 'What would you like to name this database?',
     },
-    {
-        'type': 'input',
-        'name': 'fastas',
-        'message': 'Enter directory for fasta files',
-        'default': 'fastas'
-    },
-    {
-        'type': 'input',
-        'name': 'outputs',
-        'message': 'Enter directory for blast output files',
-        'default': 'blast-outputs'
-    },
-    {
-        'type': 'input',
-        'name': 'db',
-        'message': 'Enter name of blast db',
-        'default': 'amberfly'
-    },    
+  
     {
         'type': 'checkbox',
         'qmark': '?',
