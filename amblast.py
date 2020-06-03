@@ -23,20 +23,30 @@ if init_answers['mode'] == init_choices[0]:
     pprint(answers)
 
     base_path = os.path.join(os.getcwd(), answers["DB"])
+    data_dir = os.path.join(base_path, "data")
     print(base_path)
     try:
         os.mkdir(base_path)
     except Exception:
         pass
+    try:
+        os.makedirs(data_dir)
+    except Exception:
+        pass
+    atom_length = 5
+    time_step = 0.1
+    num_behaviors = len(answers['behaviors'])
     RAD_path = os.path.join(base_path, answers['DB']+".csv")
     multi = MultiFrame.MultiFrame(behaviors=answers['behaviors'])
     multi.filename = answers['PATMOS']
     multi.get_keys()
     multi.read_from_xl_FULL(answers['PATMOS'])
+    multi.write_csvs(data_dir)
+    multi.drop_columns()
     multi.create_behavior_bins()
-    multi.avg_over_time_step(0.1)
+    multi.avg_over_time_step(time_step)
     multi.print_multi()
-    multi.create_atom_codes(num=5)
+    multi.create_atom_codes(num=atom_length)
     multi.assign_atom_codes()
     multi.convert_frames_to_rad(RAD_path)
     del multi
@@ -47,6 +57,8 @@ if init_answers['mode'] == init_choices[0]:
     db_dir = os.path.join(base_path, "db/")
     global_fsa = os.path.join(db_dir, answers["DB"]+".fsa")
     db_path = os.path.join(db_dir, answers["DB"])
+    data_dir = os.path.join(base_path, "data")
+
     try:
         os.makedirs(db_dir)
     except Exception:
@@ -59,8 +71,9 @@ if init_answers['mode'] == init_choices[0]:
         os.makedirs(output_dir)
     except Exception:
         pass
+
     
-    create_db_from_csv(RAD_path, global_fsa, fastas_dir, db_path)
+    create_db_from_csv(RAD_path, global_fsa, fastas_dir, db_path, behaviors=num_behaviors)
     blast_all(fastas_dir, output_dir, db_path)
     scores = get_blast_score_matrix(output_dir)
     score_matrix_to_file(scores, os.path.join(base_path, "scores.csv"))

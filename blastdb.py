@@ -4,7 +4,7 @@ import subprocess
 import statistics
 # makeblastdb -in ./amberfly.fsa -dbtype nucl -out ./amberflydb
 
-def create_db_from_csv(csv_path, fsa_db_path, fastas_dir, db_path):
+def create_db_from_csv(csv_path, fsa_db_path, fastas_dir, db_path, atom_length=5, behaviors=4):
     """
     csv_path: path to csv file containing RAD sequences
     fsa_db_path: path to global fsa file used to generate the database
@@ -14,58 +14,72 @@ def create_db_from_csv(csv_path, fsa_db_path, fastas_dir, db_path):
     df = pd.read_csv(csv_path, header=0)
     lengths = []
     count = 0
-    df['keys'] = df['keys'].apply(lambda x: "_".join(x.split("_")[1:]))
+    nucs_per_seq = atom_length*(behaviors+2)
     dbfile = open(fsa_db_path, "w")
     stats_file = open("seq_stats.txt", "w")
+
     for i, row in df.iterrows():
+        start = 0.0
         key = row["keys"]
         seq = row["Strings"]
         fasta_filepath = os.path.join(fastas_dir, str(count) + "_" + key + ".fsa")
         seq_len = len(seq)
-        if seq_len < 270:
+        if seq_len < 9*nucs_per_seq:
             continue
-        elif seq_len < 600:
+        elif seq_len < 20*nucs_per_seq:
+            end = len(seq)/nucs_per_seq * 0.1
+            times = "_{:0.1f}_{:0.1f}".format(start, end)
             ofile = open(fasta_filepath, "w" )
-            ofile.write(">" + str(count) + "_" + key + "\n" + seq + "\n")
-            dbfile.write(">" + str(count) + "_" + key + "\n" + seq + "\n")
-            stats_file.write(str(count) + "_" + key + ": "+ str(len(seq))+"\n")
+            ofile.write(">" + str(count) + times + "_" + key + "\n" + seq + "\n")
+            dbfile.write(">" + str(count) + times + "_" + key + "\n" + seq + "\n")
+            stats_file.write(str(count) + times + "_" + key + ": "+ str(len(seq))+"\n")
             ofile.close()
             count +=1
-        elif seq_len < 900:
+        elif seq_len < 30*nucs_per_seq:
             mid = seq_len//2
-            mod = mid % 30
+            mod = mid % nucs_per_seq
             mid = mid + mod
+            end = (mid / nucs_per_seq) * 0.1
+            times = "_{:0.1f}_{:0.1f}".format(start, end)
             ofile = open(fasta_filepath, "w" )
-            ofile.write(">" + str(count) + "_" + key + "\n" + seq[0:mid] + "\n")
-            dbfile.write(">" + str(count) + "_" + key + "\n" + seq[0:mid] + "\n")
-            stats_file.write(str(count) + "_" + key + ": "+ str(len(seq[0:mid]))+"\n")
+            ofile.write(">" + str(count) + times + "_" + key + "\n" + seq[0:mid] + "\n")
+            dbfile.write(">" + str(count) + times + "_" + key + "\n" + seq[0:mid] + "\n")
+            stats_file.write(str(count) + times + "_" + key + ": "+ str(len(seq[0:mid]))+"\n")
             ofile.close()
             count += 1
+            start = end
+            end = ((seq_len - mid)/ nucs_per_seq) * 0.1
+            times = "_{:0.1f}_{:0.1f}".format(start, end)
             fasta_filepath = os.path.join(fastas_dir, str(count) + "_" + key + ".fsa")
             ofile = open(fasta_filepath, "w" )
-            ofile.write(">" + str(count) + "_" + key + "\n" + seq[mid:] + "\n")
-            dbfile.write(">" + str(count) + "_" + key + "\n" + seq[mid:] + "\n")
-            stats_file.write(str(count) + "_" + key + ":" + str(len(seq[mid:]))+"\n")
+            ofile.write(">" + str(count) + times + "_" + key + "\n" + seq[mid:] + "\n")
+            dbfile.write(">" + str(count) + times + "_" + key + "\n" + seq[mid:] + "\n")
+            stats_file.write(str(count) + times + "_" + key + ":" + str(len(seq[mid:]))+"\n")
             ofile.close()
             count+=1
         else:
-            while seq_len > 600:
-                temp = seq[0:450]
-                seq = seq[450:]
+            while seq_len > 20*nucs_per_seq:
+                temp = seq[0:15*nucs_per_seq]
+                seq = seq[15*nucs_per_seq:]
                 seq_len = len(seq)
+                end = 15*0.1
+                times = "_{:0.1f}_{:0.1f}".format(start, end)
                 fasta_filepath = os.path.join(fastas_dir, str(count) + "_" + key + ".fsa")
                 ofile = open(fasta_filepath, "w" )
-                ofile.write(">" + str(count) + "_" + key + "\n" + temp + "\n")
-                dbfile.write(">" + str(count) + "_" + key + "\n" + temp + "\n")
-                stats_file.write(str(count) + "_" + key + ": " + str(len(temp))+"\n")
+                ofile.write(">" + str(count) + times + "_" + key + "\n" + temp + "\n")
+                dbfile.write(">" + str(count) + times +"_" + key + "\n" + temp + "\n")
+                stats_file.write(str(count) + times +"_" + key + ": " + str(len(temp))+"\n")
                 ofile.close()
                 count +=1
-            if seq_len > 250:
+                start = end
+            if seq_len > 8*nucs_per_seq:
+                end = (seq_len/nucs_per_seq)*0.1
                 fasta_filepath = os.path.join(fastas_dir, str(count) + "_" + key + ".fsa")
+                times = "_{:0.1f}_{:0.1f}".format(start, end)
                 ofile = open(fasta_filepath, "w" )
-                ofile.write(">" + str(count) + "_" + key + "\n" + seq + "\n")
-                dbfile.write(">" + str(count) + "_" + key + "\n" + seq + "\n")
-                stats_file.write(str(count) + "_" + key + ": " + str(len(seq))+"\n")
+                ofile.write(">" + str(count) +times + "_" + key + "\n" + seq + "\n")
+                dbfile.write(">" + str(count) + times +"_" + key + "\n" + seq + "\n")
+                stats_file.write(str(count) + times +"_" + key + ": " + str(len(seq))+"\n")
                 ofile.close()
                 count +=1 
         lengths.append(len(row["Strings"]))
