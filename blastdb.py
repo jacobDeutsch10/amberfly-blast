@@ -48,7 +48,7 @@ def create_db_from_csv(csv_path, fsa_db_path, fastas_dir, db_path, atom_length=5
             ofile.close()
             count += 1
             start = end
-            end = ((seq_len - mid)/ nucs_per_seq) * 0.1
+            end = ((seq_len - mid)/ nucs_per_seq) * 0.1 + start
             times = "_{:0.1f}_{:0.1f}".format(start, end)
             fasta_filepath = os.path.join(fastas_dir, str(count) + "_" + key + ".fsa")
             ofile = open(fasta_filepath, "w" )
@@ -62,7 +62,7 @@ def create_db_from_csv(csv_path, fsa_db_path, fastas_dir, db_path, atom_length=5
                 temp = seq[0:15*nucs_per_seq]
                 seq = seq[15*nucs_per_seq:]
                 seq_len = len(seq)
-                end = 15*0.1
+                end = 15*0.1 + start
                 times = "_{:0.1f}_{:0.1f}".format(start, end)
                 fasta_filepath = os.path.join(fastas_dir, str(count) + "_" + key + ".fsa")
                 ofile = open(fasta_filepath, "w" )
@@ -73,7 +73,7 @@ def create_db_from_csv(csv_path, fsa_db_path, fastas_dir, db_path, atom_length=5
                 count +=1
                 start = end
             if seq_len > 8*nucs_per_seq:
-                end = (seq_len/nucs_per_seq)*0.1
+                end = (seq_len/nucs_per_seq)*0.1 + start
                 fasta_filepath = os.path.join(fastas_dir, str(count) + "_" + key + ".fsa")
                 times = "_{:0.1f}_{:0.1f}".format(start, end)
                 ofile = open(fasta_filepath, "w" )
